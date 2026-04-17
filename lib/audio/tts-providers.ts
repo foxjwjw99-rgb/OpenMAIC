@@ -10,7 +10,7 @@
  * - GLM TTS: https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-tts
  * - Qwen TTS: https://bailian.console.aliyun.com/
  * - MiniMax TTS: https://platform.minimaxi.com/docs/api-reference/speech-t2a-http
- * - Doubao TTS: https://www.volcengine.com/docs/6561/1257543
+ * - Doubao TTS: https://www.volcengine.com/docs/6561/125754
  * - ElevenLabs TTS: https://elevenlabs.io/docs/api-reference/text-to-speech/convert
  * - Browser Native: Web Speech API (client-side only)
  *
@@ -355,7 +355,9 @@ async function generateMiniMaxTTS(
     /\/$/,
     '',
   );
-  const response = await fetch(`${baseUrl}/v1/t2a_v2`, {
+  const groupId = config.providerOptions?.groupId as string | undefined;
+  const t2aUrl = groupId ? `${baseUrl}/v1/t2a_v2?GroupId=${encodeURIComponent(groupId)}` : `${baseUrl}/v1/t2a_v2`;
+  const response = await fetch(t2aUrl, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
