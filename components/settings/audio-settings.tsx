@@ -104,7 +104,7 @@ export function AudioSettings({ onSave }: AudioSettingsProps = {}) {
 
   const handleTTSProviderConfigChange = (
     providerId: TTSProviderId,
-    config: Partial<{ apiKey: string; baseUrl: string; model?: string; enabled: boolean }>,
+    config: Partial<{ apiKey: string; baseUrl: string; model?: string; enabled: boolean; providerOptions: Record<string, unknown> }>,
   ) => {
     setTTSProviderConfig(providerId, config);
     onSave?.();
@@ -503,6 +503,24 @@ export function AudioSettings({ onSave }: AudioSettingsProps = {}) {
                   />
                 </div>
               </div>
+              {ttsProviderId === 'minimax-tts' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">Group ID</Label>
+                  <Input
+                    placeholder="請輸入 MiniMax Group ID"
+                    value={(ttsProvidersConfig[ttsProviderId]?.providerOptions?.groupId as string) || ''}
+                    onChange={(e) =>
+                      handleTTSProviderConfigChange(ttsProviderId, {
+                        providerOptions: {
+                          ...ttsProvidersConfig[ttsProviderId]?.providerOptions,
+                          groupId: e.target.value,
+                        },
+                      })
+                    }
+                    className="text-sm"
+                  />
+                </div>
+              )}
             </>
           )}
         </div>
