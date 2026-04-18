@@ -350,6 +350,17 @@ export async function generateClassroom(
   log.info('Stage 2: Generating scene content and actions...');
   let generatedScenes = 0;
 
+  // Build prior-outline refs once; each scene slices into it for scaffolding.
+  const allTitles = outlines.map((o) => o.title);
+  const priorRefs = outlines.map((o) => ({
+    id: o.id,
+    order: o.order,
+    title: o.title,
+    keyPoints: o.keyPoints,
+    depthLevel: o.depthLevel,
+  }));
+  const depthProfile = outlinesResult.data.depthProfile;
+
   for (const [index, outline] of outlines.entries()) {
     const safeOutline = applyOutlineFallbacks(outline, true);
     const progressStart = 30 + Math.floor((index / Math.max(outlines.length, 1)) * 60);
@@ -362,7 +373,21 @@ export async function generateClassroom(
       totalScenes: outlines.length,
     });
 
-    const content = await generateSceneContent(safeOutline, aiCall, { agents, languageDirective });
+    const ctx = {
+      pageIndex: index + 1,
+      totalPages: outlines.length,
+      allTitles,
+      previousSpeeches: [],
+      priorOutlines: priorRefs.slice(0, index),
+      currentDepthLevel: safeOutline.depthLevel,
+      depthProfile,
+    };
+
+    const content = await generateSceneContent(safeOutline, aiCall, {
+      agents,
+      languageDirective,
+      ctx,
+    });
     if (!content) {
       log.warn(`Skipping scene "${safeOutline.title}" — content generation failed`);
       continue;
@@ -371,6 +396,7 @@ export async function generateClassroom(
     const actions = await generateSceneActions(safeOutline, content, aiCall, {
       agents,
       languageDirective,
+      ctx,
     });
     log.info(`Scene "${safeOutline.title}": ${actions.length} actions`);
 

@@ -34,6 +34,12 @@ import type {
 import { apiError } from '@/lib/server/api-response';
 import { createLogger } from '@/lib/logger';
 import { resolveModelFromHeaders } from '@/lib/server/resolve-model';
+import {
+  describeDepthProfile,
+  describeAudienceLevel,
+  defaultDepthLevelForOrder,
+} from '@/lib/generation/depth-profile';
+import type { DepthLevel } from '@/lib/types/generation';
 const log = createLogger('Outlines Stream');
 
 export const maxDuration = 300;
@@ -206,6 +212,9 @@ export async function POST(req: NextRequest) {
     // Build teacher context from agents (if available)
     const teacherContext = formatTeacherPersonaForPrompt(agents);
 
+    const depthProfile = requirements.depthProfile ?? 'standard';
+    const audienceLevel = requirements.audienceLevel ?? 'intermediate';
+
     const prompts = buildPrompt(PROMPT_IDS.REQUIREMENTS_TO_OUTLINES, {
       requirement: requirements.requirement,
       pdfContent: pdfText ? pdfText.substring(0, MAX_PDF_CONTENT_CHARS) : 'None',
@@ -214,6 +223,10 @@ export async function POST(req: NextRequest) {
       mediaGenerationPolicy,
       teacherContext,
       userProfile: userProfileText,
+      depthProfile,
+      audienceLevel,
+      depthProfileGuidance: describeDepthProfile(depthProfile),
+      audienceGuidance: describeAudienceLevel(audienceLevel),
     });
 
     if (!prompts) {
@@ -302,11 +315,17 @@ export async function POST(req: NextRequest) {
                 // Try to extract new outlines from the accumulated text
                 const newOutlines = extractNewOutlines(fullText, parsedOutlines.length);
                 for (const outline of newOutlines) {
-                  // Ensure ID and order
+                  // Ensure ID, order, and depthLevel default. Total scene count is
+                  // unknown mid-stream, so we use the running count as a best-effort
+                  // denominator — it's only used when the model omits depthLevel.
+                  const order = parsedOutlines.length + 1;
+                  const depthLevel: DepthLevel =
+                    outline.depthLevel ?? defaultDepthLevelForOrder(order, order);
                   const enriched = {
                     ...outline,
                     id: outline.id || nanoid(),
-                    order: parsedOutlines.length + 1,
+                    order,
+                    depthLevel,
                   };
                   parsedOutlines.push(enriched);
 

@@ -49,6 +49,45 @@ export function buildCourseContext(ctx?: SceneGenerationContext): string {
   return lines.join('\n');
 }
 
+/**
+ * Build a scaffolding context block that lists prior scenes and instructs the
+ * model on how this scene should build on them. Used by the slide / quiz /
+ * interactive content prompts to enforce progressive depth.
+ */
+export function buildContentScaffoldContext(ctx?: SceneGenerationContext): string {
+  if (!ctx || !ctx.priorOutlines || ctx.priorOutlines.length === 0) return '';
+
+  const lines: string[] = ['Already-established concepts (from earlier scenes in this course):'];
+  for (const o of ctx.priorOutlines) {
+    const points = o.keyPoints?.length ? o.keyPoints.join('; ') : '(no key points listed)';
+    const tier = o.depthLevel ? ` [${o.depthLevel}]` : '';
+    lines.push(`- Scene ${o.order}${tier} "${o.title}": ${points}`);
+  }
+
+  const currentTier = ctx.currentDepthLevel ?? 'building';
+  const profile = ctx.depthProfile ?? 'standard';
+  lines.push('');
+  lines.push(
+    `This scene is at depth tier **${currentTier}** in a **${profile}** course. Do NOT re-explain the established concepts above — reference them by name and build on them.`,
+  );
+
+  if (currentTier === 'application' || currentTier === 'synthesis' || currentTier === 'mastery') {
+    lines.push(
+      'Because this is an application+ tier scene: include at least one worked example, derivation step, comparison, or non-trivial edge case. Density and rigor matter more than brevity.',
+    );
+  } else if (currentTier === 'building') {
+    lines.push(
+      'Because this is a building tier scene: walk through the mechanism with a concrete worked example.',
+    );
+  } else {
+    lines.push(
+      'Because this is a foundation tier scene: motivate the concept, define terms clearly, and use the simplest possible example.',
+    );
+  }
+
+  return lines.join('\n');
+}
+
 /** Format agent list for injection into action prompts */
 export function formatAgentsForPrompt(agents?: AgentInfo[]): string {
   if (!agents || agents.length === 0) return '';

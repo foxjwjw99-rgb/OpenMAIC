@@ -26,7 +26,18 @@
     "ttsTitle": "تحويل النص إلى كلام",
     "ttsHint": "اختر صوتًا للمعلم الذكي",
     "ttsPreview": "معاينة",
-    "ttsPreviewing": "جارٍ التشغيل..."
+    "ttsPreviewing": "جارٍ التشغيل...",
+    "depth": "العمق",
+    "depthDesc": "اضبط مستوى عمق الدورة والجمهور المستهدف",
+    "depthProfile": "ملف العمق",
+    "depthAudience": "مستوى الجمهور",
+    "depthProfileOverview": "نظرة عامة — واسعة وسطحية",
+    "depthProfileStandard": "قياسي — متوازن",
+    "depthProfileDeepDive": "تعمق — تدرّج كامل",
+    "depthProfileMastery": "إتقان — تركيب متقدم",
+    "depthAudienceBeginner": "مبتدئ",
+    "depthAudienceIntermediate": "متوسط",
+    "depthAudienceAdvanced": "متقدم"
   },
   "export": {
     "pptx": "تصدير PPTX",
@@ -441,6 +452,10 @@
     "importFromClipboard": "استيراد من الحافظة",
     "apiSecret": "مفتاح API",
     "apiHost": "العنوان الأساسي",
+    "baseUrlRegion": {
+      "china": "الصين",
+      "international": "دولي"
+    },
     "requestUrl": "عنوان الطلب",
     "models": "النماذج",
     "addModel": "جديد",
@@ -568,6 +583,7 @@
     "providerQwenASR": "Qwen ASR (سحابة علي بابا بايليان)",
     "providerUnpdf": "unpdf (مُدمج)",
     "providerMinerU": "MinerU",
+    "providerMinerUCloud": "MinerU (السحابي)",
     "browserNativeTTSNote": "TTS المُدمج في المتصفح لا يحتاج تكوينًا وهو مجاني تمامًا، يستخدم أصوات النظام المُدمجة",
     "testTTS": "اختبار TTS",
     "testASR": "اختبار ASR",
@@ -796,6 +812,7 @@
     "mineruLocalDescription": "يدعم MinerU النشر المحلي مع تحليل PDF متقدم (جداول، معادلات، تحليل تخطيط). يتطلب نشر خدمة MinerU أولاً.",
     "mineruServerAddress": "عنوان خادم MinerU المحلي (مثلاً، http://localhost:8080)",
     "mineruApiKeyOptional": "مطلوب فقط إذا كان الخادم يتطلب مصادقة",
+    "mineruCloudApiKeyPlaceholder": "أدخل مفتاح MinerU Cloud API",
     "optionalApiKey": "مفتاح API اختياري",
     "featureText": "استخراج النص",
     "featureImages": "استخراج الصور",

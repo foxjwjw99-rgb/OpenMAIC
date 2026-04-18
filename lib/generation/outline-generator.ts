@@ -10,7 +10,17 @@ import type {
   SceneOutline,
   PdfImage,
   ImageMapping,
+  OutlineGenerationOutput,
+  CoverageMap,
+  DepthProfile,
+  AudienceLevel,
+  DepthLevel,
 } from '@/lib/types/generation';
+import {
+  defaultDepthLevelForOrder,
+  describeDepthProfile,
+  describeAudienceLevel,
+} from './depth-profile';
 import { buildPrompt, PROMPT_IDS } from './prompts';
 import { formatImageDescription, formatImagePlaceholder } from './prompt-formatters';
 import { parseJsonResponse } from './json-repair';
@@ -37,7 +47,9 @@ export async function generateSceneOutlinesFromRequirements(
     researchContext?: string;
     teacherContext?: string;
   },
-): Promise<GenerationResult<{ languageDirective: string; outlines: SceneOutline[] }>> {
+): Promise<GenerationResult<OutlineGenerationOutput>> {
+  const depthProfile: DepthProfile = requirements.depthProfile ?? 'standard';
+  const audienceLevel: AudienceLevel = requirements.audienceLevel ?? 'intermediate';
   // Build available images description for the prompt
   let availableImagesText = 'No images available';
   let visionImages: Array<{ id: string; src: string }> | undefined;
@@ -100,6 +112,10 @@ export async function generateSceneOutlinesFromRequirements(
     researchContext: options?.researchContext || 'None',
     // Server-side generation populates this via options; client-side populates via formatTeacherPersonaForPrompt
     teacherContext: options?.teacherContext || '',
+    depthProfile,
+    audienceLevel,
+    depthProfileGuidance: describeDepthProfile(depthProfile),
+    audienceGuidance: describeAudienceLevel(audienceLevel),
   });
 
   if (!prompts) {
@@ -118,11 +134,19 @@ export async function generateSceneOutlinesFromRequirements(
 
     const response = await aiCall(prompts.system, prompts.user, visionImages);
     const parsed = parseJsonResponse<
-      { languageDirective: string; outlines: SceneOutline[] } | SceneOutline[]
+      | {
+          languageDirective: string;
+          outlines: SceneOutline[];
+          coverageMap?: CoverageMap;
+          depthProfile?: DepthProfile;
+        }
+      | SceneOutline[]
     >(response);
 
     let languageDirective: string;
     let rawOutlines: SceneOutline[];
+    let coverageMap: CoverageMap = { topics: [] };
+    let returnedDepthProfile: DepthProfile = depthProfile;
 
     if (Array.isArray(parsed)) {
       // Fallback: LLM returned old flat array format
@@ -132,6 +156,8 @@ export async function generateSceneOutlinesFromRequirements(
       languageDirective =
         parsed.languageDirective || 'Teach in the language that matches the user requirement.';
       rawOutlines = parsed.outlines;
+      if (parsed.coverageMap?.topics) coverageMap = parsed.coverageMap;
+      if (parsed.depthProfile) returnedDepthProfile = parsed.depthProfile;
     } else {
       return { success: false, error: 'Failed to parse scene outlines response' };
     }
@@ -140,12 +166,15 @@ export async function generateSceneOutlinesFromRequirements(
       return { success: false, error: 'Failed to parse scene outlines response' };
     }
 
-    // Ensure IDs and order
-    const enriched = rawOutlines.map((outline, index) => ({
-      ...outline,
-      id: outline.id || nanoid(),
-      order: index + 1,
-    }));
+    // Ensure IDs and order; default depthLevel when the model omits it.
+    const totalScenes = rawOutlines.length;
+    const enriched: SceneOutline[] = rawOutlines.map((outline, index) => {
+      const id = outline.id || nanoid();
+      const order = index + 1;
+      const depthLevel: DepthLevel =
+        outline.depthLevel ?? defaultDepthLevelForOrder(order, totalScenes);
+      return { ...outline, id, order, depthLevel };
+    });
 
     // Replace sequential gen_img_N/gen_vid_N with globally unique IDs
     const result = uniquifyMediaElementIds(enriched);
@@ -159,7 +188,15 @@ export async function generateSceneOutlinesFromRequirements(
       totalScenes: result.length,
     });
 
-    return { success: true, data: { languageDirective, outlines: result } };
+    return {
+      success: true,
+      data: {
+        languageDirective,
+        outlines: result,
+        coverageMap,
+        depthProfile: returnedDepthProfile,
+      },
+    };
   } catch (error) {
     return { success: false, error: String(error) };
   }

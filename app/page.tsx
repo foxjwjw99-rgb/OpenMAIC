@@ -32,7 +32,7 @@ import { AgentBar } from '@/components/agent/agent-bar';
 import { useTheme } from '@/lib/hooks/use-theme';
 import { nanoid } from 'nanoid';
 import { storePdfBlob } from '@/lib/utils/image-storage';
-import type { UserRequirements } from '@/lib/types/generation';
+import type { UserRequirements, DepthProfile, AudienceLevel } from '@/lib/types/generation';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useUserProfileStore, AVATAR_OPTIONS } from '@/lib/store/user-profile';
 import {
@@ -54,18 +54,36 @@ import { useImportClassroom } from '@/lib/import/use-import-classroom';
 const log = createLogger('Home');
 
 const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
+const DEPTH_PROFILE_STORAGE_KEY = 'depthProfile';
+const AUDIENCE_LEVEL_STORAGE_KEY = 'audienceLevel';
 const RECENT_OPEN_STORAGE_KEY = 'recentClassroomsOpen';
+
+const DEPTH_PROFILE_VALUES: ReadonlyArray<DepthProfile> = [
+  'overview',
+  'standard',
+  'deep-dive',
+  'mastery',
+];
+const AUDIENCE_LEVEL_VALUES: ReadonlyArray<AudienceLevel> = [
+  'beginner',
+  'intermediate',
+  'advanced',
+];
 
 interface FormState {
   pdfFile: File | null;
   requirement: string;
   webSearch: boolean;
+  depthProfile: DepthProfile;
+  audienceLevel: AudienceLevel;
 }
 
 const initialFormState: FormState = {
   pdfFile: null,
   requirement: '',
   webSearch: false,
+  depthProfile: 'standard',
+  audienceLevel: 'intermediate',
 };
 
 function HomePage() {
@@ -97,8 +115,16 @@ function HomePage() {
     }
     try {
       const savedWebSearch = localStorage.getItem(WEB_SEARCH_STORAGE_KEY);
+      const savedDepth = localStorage.getItem(DEPTH_PROFILE_STORAGE_KEY);
+      const savedAudience = localStorage.getItem(AUDIENCE_LEVEL_STORAGE_KEY);
       const updates: Partial<FormState> = {};
       if (savedWebSearch === 'true') updates.webSearch = true;
+      if (savedDepth && DEPTH_PROFILE_VALUES.includes(savedDepth as DepthProfile)) {
+        updates.depthProfile = savedDepth as DepthProfile;
+      }
+      if (savedAudience && AUDIENCE_LEVEL_VALUES.includes(savedAudience as AudienceLevel)) {
+        updates.audienceLevel = savedAudience as AudienceLevel;
+      }
       if (Object.keys(updates).length > 0) {
         setForm((prev) => ({ ...prev, ...updates }));
       }
@@ -198,6 +224,9 @@ function HomePage() {
     setForm((prev) => ({ ...prev, [field]: value }));
     try {
       if (field === 'webSearch') localStorage.setItem(WEB_SEARCH_STORAGE_KEY, String(value));
+      if (field === 'depthProfile') localStorage.setItem(DEPTH_PROFILE_STORAGE_KEY, value as string);
+      if (field === 'audienceLevel')
+        localStorage.setItem(AUDIENCE_LEVEL_STORAGE_KEY, value as string);
       if (field === 'requirement') updateRequirementCache(value as string);
     } catch {
       /* ignore */
@@ -260,6 +289,8 @@ function HomePage() {
         userNickname: userProfile.nickname || undefined,
         userBio: userProfile.bio || undefined,
         webSearch: form.webSearch || undefined,
+        depthProfile: form.depthProfile,
+        audienceLevel: form.audienceLevel,
       };
 
       let pdfStorageKey: string | undefined;
@@ -512,6 +543,10 @@ function HomePage() {
                   pdfFile={form.pdfFile}
                   onPdfFileChange={(f) => updateForm('pdfFile', f)}
                   onPdfError={setError}
+                  depthProfile={form.depthProfile}
+                  onDepthProfileChange={(v) => updateForm('depthProfile', v)}
+                  audienceLevel={form.audienceLevel}
+                  onAudienceLevelChange={(v) => updateForm('audienceLevel', v)}
                 />
               </div>
 

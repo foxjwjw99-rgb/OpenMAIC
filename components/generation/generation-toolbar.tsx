@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
-import { Bot, Check, ChevronLeft, Paperclip, FileText, X, Globe2 } from 'lucide-react';
+import { Bot, Check, ChevronLeft, Paperclip, FileText, X, Globe2, Layers } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
@@ -21,6 +21,7 @@ import type { WebSearchProviderId } from '@/lib/web-search/types';
 import type { ProviderId } from '@/lib/ai/providers';
 import { MONO_LOGO_PROVIDERS } from '@/lib/ai/providers';
 import type { SettingsSection } from '@/lib/types/settings';
+import type { DepthProfile, AudienceLevel } from '@/lib/types/generation';
 import { MediaPopover } from '@/components/generation/media-popover';
 
 // ─── Constants ───────────────────────────────────────────────
@@ -36,6 +37,11 @@ export interface GenerationToolbarProps {
   pdfFile: File | null;
   onPdfFileChange: (file: File | null) => void;
   onPdfError: (error: string | null) => void;
+  // Depth
+  depthProfile: DepthProfile;
+  onDepthProfileChange: (v: DepthProfile) => void;
+  audienceLevel: AudienceLevel;
+  onAudienceLevelChange: (v: AudienceLevel) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────
@@ -46,6 +52,10 @@ export function GenerationToolbar({
   pdfFile,
   onPdfFileChange,
   onPdfError,
+  depthProfile,
+  onDepthProfileChange,
+  audienceLevel,
+  onAudienceLevelChange,
 }: GenerationToolbarProps) {
   const { t } = useI18n();
   const currentProviderId = useSettingsStore((s) => s.providerId);
@@ -359,10 +369,85 @@ export function GenerationToolbar({
       {/* ── Separator ── */}
       <div className="w-px h-4 bg-border/60 mx-1" />
 
+      {/* ── Depth profile + audience ── */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            className={
+              depthProfile === 'standard' && audienceLevel === 'intermediate' ? pillMuted : pillActive
+            }
+          >
+            <Layers className="size-3.5" />
+            <span>{depthProfileShortLabel(depthProfile)}</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 p-3 space-y-3">
+          <div>
+            <p className="text-xs font-semibold mb-0.5">{t('toolbar.depth')}</p>
+            <p className="text-[10px] text-muted-foreground/70">{t('toolbar.depthDesc')}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 w-20">
+              {t('toolbar.depthProfile')}
+            </span>
+            <Select
+              value={depthProfile}
+              onValueChange={(v) => onDepthProfileChange(v as DepthProfile)}
+            >
+              <SelectTrigger className="h-7 text-xs flex-1 min-w-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overview">{t('toolbar.depthProfileOverview')}</SelectItem>
+                <SelectItem value="standard">{t('toolbar.depthProfileStandard')}</SelectItem>
+                <SelectItem value="deep-dive">{t('toolbar.depthProfileDeepDive')}</SelectItem>
+                <SelectItem value="mastery">{t('toolbar.depthProfileMastery')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 w-20">
+              {t('toolbar.depthAudience')}
+            </span>
+            <Select
+              value={audienceLevel}
+              onValueChange={(v) => onAudienceLevelChange(v as AudienceLevel)}
+            >
+              <SelectTrigger className="h-7 text-xs flex-1 min-w-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="beginner">{t('toolbar.depthAudienceBeginner')}</SelectItem>
+                <SelectItem value="intermediate">
+                  {t('toolbar.depthAudienceIntermediate')}
+                </SelectItem>
+                <SelectItem value="advanced">{t('toolbar.depthAudienceAdvanced')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* ── Separator ── */}
+      <div className="w-px h-4 bg-border/60 mx-1" />
+
       {/* ── Media popover ── */}
       <MediaPopover onSettingsOpen={onSettingsOpen} />
     </div>
   );
+}
+
+function depthProfileShortLabel(profile: DepthProfile): string {
+  switch (profile) {
+    case 'overview':
+      return 'Overview';
+    case 'standard':
+      return 'Standard';
+    case 'deep-dive':
+      return 'Deep dive';
+    case 'mastery':
+      return 'Mastery';
+  }
 }
 
 // ─── ModelSelectorPopover (two-level: provider → model) ─────

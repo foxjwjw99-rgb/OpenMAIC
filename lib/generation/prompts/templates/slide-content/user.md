@@ -4,8 +4,11 @@
 
 - **Title**: {{title}}
 - **Description**: {{description}}
+- **Depth Tier**: {{depthLevel}}
 - **Key Points**:
   {{keyPoints}}
+
+{{scaffoldContext}}
 
 {{teacherContext}}
 

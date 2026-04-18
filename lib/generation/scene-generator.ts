@@ -28,6 +28,7 @@ import { parseActionsFromStructuredOutput } from './action-parser';
 import { parseJsonResponse } from './json-repair';
 import {
   buildCourseContext,
+  buildContentScaffoldContext,
   buildLanguageText,
   formatAgentsForPrompt,
   formatTeacherPersonaForPrompt,
@@ -58,6 +59,8 @@ export interface SceneContentOptions {
   generatedMediaMapping?: ImageMapping;
   agents?: AgentInfo[];
   languageDirective?: string;
+  /** Cross-scene scaffolding context — prior outlines + this scene's depth tier. */
+  ctx?: SceneGenerationContext;
 }
 
 export interface SceneActionsOptions {
@@ -98,11 +101,29 @@ export async function generateFullScenes(
     totalScenes,
   });
 
+  // Build a compact prior-outline list once; each scene slices into it.
+  const allTitles = sceneOutlines.map((o) => o.title);
+  const priorRefs = sceneOutlines.map((o) => ({
+    id: o.id,
+    order: o.order,
+    title: o.title,
+    keyPoints: o.keyPoints,
+    depthLevel: o.depthLevel,
+  }));
+
   // Generate all scenes in parallel
   const results = await Promise.all(
     sceneOutlines.map(async (outline, index) => {
       try {
-        const sceneId = await generateSingleScene(outline, api, aiCall, languageDirective);
+        const ctx: SceneGenerationContext = {
+          pageIndex: index + 1,
+          totalPages: totalScenes,
+          allTitles,
+          previousSpeeches: [],
+          priorOutlines: priorRefs.slice(0, index),
+          currentDepthLevel: outline.depthLevel,
+        };
+        const sceneId = await generateSingleScene(outline, api, aiCall, languageDirective, ctx);
 
         // Update progress (not atomic, but sufficient for UI display)
         completedCount++;
@@ -147,10 +168,11 @@ async function generateSingleScene(
   api: ReturnType<typeof createStageAPI>,
   aiCall: AICallFn,
   languageDirective?: string,
+  ctx?: SceneGenerationContext,
 ): Promise<string | null> {
   // Step 3.1: Generate content
   log.info(`Step 3.1: Generating content for: ${outline.title}`);
-  const content = await generateSceneContent(outline, aiCall, { languageDirective });
+  const content = await generateSceneContent(outline, aiCall, { languageDirective, ctx });
   if (!content) {
     log.error(`Failed to generate content for: ${outline.title}`);
     return null;
@@ -158,7 +180,7 @@ async function generateSingleScene(
 
   // Step 3.2: Generate Actions
   log.info(`Step 3.2: Generating actions for: ${outline.title}`);
-  const actions = await generateSceneActions(outline, content, aiCall, { languageDirective });
+  const actions = await generateSceneActions(outline, content, aiCall, { languageDirective, ctx });
   log.info(`Generated ${actions.length} actions for: ${outline.title}`);
 
   // Create complete Scene
@@ -187,6 +209,7 @@ export async function generateSceneContent(
     generatedMediaMapping,
     agents,
     languageDirective,
+    ctx,
   } = options;
   // If outline is interactive but missing interactiveConfig, fall back to slide
   if (outline.type === 'interactive' && !outline.interactiveConfig) {
@@ -203,6 +226,7 @@ export async function generateSceneContent(
       generatedMediaMapping,
       agents,
       languageDirective,
+      ctx,
     );
   }
 
@@ -217,9 +241,10 @@ export async function generateSceneContent(
         generatedMediaMapping,
         agents,
         languageDirective,
+        ctx,
       );
     case 'quiz':
-      return generateQuizContent(outline, aiCall, languageDirective);
+      return generateQuizContent(outline, aiCall, languageDirective, ctx);
     case 'interactive':
       return generateInteractiveContent(outline, aiCall, languageDirective);
     case 'pbl':
@@ -495,6 +520,7 @@ async function generateSlideContent(
   generatedMediaMapping?: ImageMapping,
   agents?: AgentInfo[],
   languageDirective?: string,
+  ctx?: SceneGenerationContext,
 ): Promise<GeneratedSlideContent | null> {
   // Build assigned images description for the prompt
   let assignedImagesText = 'No images available. Do NOT insert any image elements.';
@@ -560,6 +586,11 @@ async function generateSlideContent(
 
   const teacherContext = formatTeacherPersonaForPrompt(agents);
 
+  const sceneCtx: SceneGenerationContext | undefined = ctx
+    ? { ...ctx, currentDepthLevel: outline.depthLevel ?? ctx.currentDepthLevel }
+    : undefined;
+  const scaffoldContext = buildContentScaffoldContext(sceneCtx);
+
   const prompts = buildPrompt(PROMPT_IDS.SLIDE_CONTENT, {
     title: outline.title,
     description: outline.description,
@@ -569,6 +600,8 @@ async function generateSlideContent(
     canvas_width: canvasWidth,
     canvas_height: canvasHeight,
     teacherContext,
+    scaffoldContext,
+    depthLevel: outline.depthLevel ?? 'building',
     languageDirective: buildLanguageText(languageDirective, outline.languageNote),
   });
 
@@ -659,6 +692,7 @@ async function generateQuizContent(
   outline: SceneOutline,
   aiCall: AICallFn,
   languageDirective?: string,
+  ctx?: SceneGenerationContext,
 ): Promise<GeneratedQuizContent | null> {
   const quizConfig = outline.quizConfig || {
     questionCount: 3,
@@ -666,12 +700,32 @@ async function generateQuizContent(
     questionTypes: ['single'],
   };
 
+  // Map scene depth tier → quiz difficulty when explicit difficulty is "medium"
+  // (the legacy default). Scenes with an authored quizConfig.difficulty win.
+  const depthLevel = outline.depthLevel ?? ctx?.currentDepthLevel ?? 'building';
+  const tierToDifficulty: Record<string, 'easy' | 'medium' | 'hard'> = {
+    foundation: 'easy',
+    building: 'easy',
+    application: 'medium',
+    synthesis: 'hard',
+    mastery: 'hard',
+  };
+  const effectiveDifficulty: 'easy' | 'medium' | 'hard' =
+    outline.quizConfig?.difficulty ?? tierToDifficulty[depthLevel] ?? 'medium';
+
+  const sceneCtx: SceneGenerationContext | undefined = ctx
+    ? { ...ctx, currentDepthLevel: depthLevel }
+    : undefined;
+  const scaffoldContext = buildContentScaffoldContext(sceneCtx);
+
   const prompts = buildPrompt(PROMPT_IDS.QUIZ_CONTENT, {
     title: outline.title,
     description: outline.description,
     keyPoints: (outline.keyPoints || []).map((p, i) => `${i + 1}. ${p}`).join('\n'),
     questionCount: quizConfig.questionCount,
-    difficulty: quizConfig.difficulty,
+    difficulty: effectiveDifficulty,
+    depthLevel,
+    scaffoldContext,
     questionTypes: quizConfig.questionTypes.join(', '),
     languageDirective: buildLanguageText(languageDirective, outline.languageNote),
   });

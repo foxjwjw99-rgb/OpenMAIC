@@ -26,7 +26,18 @@
     "ttsTitle": "音声合成",
     "ttsHint": "AI教師の声を選択",
     "ttsPreview": "プレビュー",
-    "ttsPreviewing": "再生中..."
+    "ttsPreviewing": "再生中...",
+    "depth": "深度",
+    "depthDesc": "コースの深さと対象者を調整",
+    "depthProfile": "深度プロファイル",
+    "depthAudience": "対象レベル",
+    "depthProfileOverview": "概要 — 広く浅く",
+    "depthProfileStandard": "標準 — バランス型",
+    "depthProfileDeepDive": "深掘り — 段階的に厚く",
+    "depthProfileMastery": "熟達 — 高度な統合",
+    "depthAudienceBeginner": "初級",
+    "depthAudienceIntermediate": "中級",
+    "depthAudienceAdvanced": "上級"
   },
   "export": {
     "pptx": "PPTXエクスポート",
@@ -441,6 +452,10 @@
     "importFromClipboard": "クリップボードからインポート",
     "apiSecret": "APIキー",
     "apiHost": "ベースURL",
+    "baseUrlRegion": {
+      "china": "中国",
+      "international": "国際"
+    },
     "requestUrl": "リクエストURL",
     "models": "モデル",
     "addModel": "新規",
