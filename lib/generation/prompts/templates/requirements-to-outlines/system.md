@@ -66,6 +66,71 @@ Infer the course language from all available signals and produce:
 
 ---
 
+## Coverage Planning (REQUIRED)
+
+Before writing scenes, **decompose the requested topic into 5–12 sub-topics** that together fully cover the user's goal. Each sub-topic must be addressed by at least one scene. Surface this plan as the top-level `coverageMap` field in the output:
+
+```json
+"coverageMap": {
+  "topics": [
+    {
+      "name": "Self-attention mechanism",
+      "rationale": "The foundational operation that makes Transformers work — without it learners cannot reason about anything else.",
+      "addressedBySceneIds": ["scene_3", "scene_4"]
+    }
+  ]
+}
+```
+
+Rules:
+- **Completeness over brevity.** If the user asks "teach me X", every standard sub-topic of X must appear, even if briefly. Don't skip a sub-topic just because the course is short — shorten its scene instead.
+- Every `addressedBySceneIds` entry must reference a scene that actually exists in `outlines`.
+- Every scene should map to at least one coverage topic (no orphan scenes).
+- Order topics roughly in the order they appear in the course.
+
+---
+
+## Progressive Depth Scaffolding (REQUIRED)
+
+Each scene has a **`depthLevel`** chosen from this ladder (loosely Bloom-aligned):
+
+| Tier          | Cognitive load                                                            |
+| ------------- | -------------------------------------------------------------------------- |
+| `foundation`  | Definitions, motivation, simplest examples. "What is X?"                  |
+| `building`    | Mechanisms, walkthroughs, worked examples. "How does X work?"             |
+| `application` | Non-trivial problems, comparisons, edge cases. "When/how do I use X?"     |
+| `synthesis`   | Combine multiple concepts, design tradeoffs. "How does X fit with Y, Z?"  |
+| `mastery`     | Novel scenarios, research-level depth. "What are X's frontiers?"          |
+
+**Order matters**: scenes must climb this ladder roughly monotonically. The first scene must be `foundation`. Never put a `synthesis`/`mastery` scene before its prerequisites have been established.
+
+### Depth Profile
+
+The course depth profile is **`{{depthProfile}}`** ({{depthProfileGuidance}}).
+
+Match this distribution as closely as the topic allows. A `deep-dive` course is **noticeably heavier in `application`/`synthesis`** than a `standard` course — do NOT default to a shallow overview.
+
+### Prerequisites
+
+For every scene at `application`, `synthesis`, or `mastery`, set `prerequisiteSceneIds` to the scene IDs whose concepts this scene builds on. Each prerequisite ID must reference a scene with **strictly smaller `order`**. Foundation/building scenes may omit `prerequisiteSceneIds`.
+
+### Depth, not length
+
+A higher depth tier means **denser concepts and more rigor**, not just more words. Application+ scenes should:
+- Reference a specific prior scene by ID and extend its idea
+- Include at least one worked example, derivation step, comparison, or edge case
+- Avoid re-explaining anything already established in earlier scenes
+
+---
+
+## Audience Level
+
+The audience level is **`{{audienceLevel}}`** ({{audienceGuidance}}).
+
+This shifts where the foundation tier lands. Advanced audiences need only minimal foundation scenes; beginners need more.
+
+---
+
 ## Default Assumption Rules
 
 When user requirements don't specify, use these defaults:
@@ -218,6 +283,16 @@ Output a JSON **object** (not a bare array) with this structure:
 ```json
 {
   "languageDirective": "2-5 sentence instruction describing the course language behavior",
+  "depthProfile": "standard",
+  "coverageMap": {
+    "topics": [
+      {
+        "name": "Sub-topic name",
+        "rationale": "Why this sub-topic matters for the course goal",
+        "addressedBySceneIds": ["scene_1", "scene_2"]
+      }
+    ]
+  },
   "outlines": [
     {
       "id": "scene_1",
@@ -226,6 +301,7 @@ Output a JSON **object** (not a bare array) with this structure:
       "description": "1-2 sentences describing the teaching purpose",
       "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
       "teachingObjective": "Corresponding learning objective",
+      "depthLevel": "foundation",
       "estimatedDuration": 120,
       "order": 1,
       "suggestedImageIds": ["img_1"],
@@ -258,6 +334,8 @@ Output a JSON **object** (not a bare array) with this structure:
       "title": "Knowledge Check",
       "description": "Test student understanding of XX concept",
       "keyPoints": ["Test point 1", "Test point 2"],
+      "depthLevel": "application",
+      "prerequisiteSceneIds": ["scene_1", "scene_2"],
       "order": 3,
       "quizConfig": {
         "questionCount": 2,
@@ -287,6 +365,8 @@ Output a JSON **object** (not a bare array) with this structure:
 | interactiveConfig | object                   | ❌       | Required for interactive type, contains conceptName/conceptOverview/designIdea/subject           |
 | languageNote      | string                   | ❌       | Optional. Only include when this scene has language considerations not covered by the course-level languageDirective. |
 | pblConfig         | object                   | ❌       | Required for pbl type, contains projectTopic/projectDescription/targetSkills/issueCount |
+| depthLevel        | string                   | ✅       | One of `foundation`/`building`/`application`/`synthesis`/`mastery` (see Progressive Depth Scaffolding) |
+| prerequisiteSceneIds | string[]              | conditional | Required when `depthLevel` is `application`/`synthesis`/`mastery`. Each ID must reference a scene with smaller `order`. |
 
 ### quizConfig Structure
 
@@ -324,14 +404,15 @@ Output a JSON **object** (not a bare array) with this structure:
 
 ## Important Reminders
 
-1. **Must output valid JSON object with `languageDirective` and `outlines` fields**
+1. **Must output valid JSON object with `languageDirective`, `coverageMap`, `depthProfile`, and `outlines` fields**
 2. **type can be `"slide"`, `"quiz"`, `"interactive"`, or `"pbl"`**
 3. **quiz type must include quizConfig**
 4. **interactive type must include interactiveConfig** - with conceptName, conceptOverview, designIdea, and subject
    5b. **pbl type must include pblConfig** - with projectTopic, projectDescription, targetSkills, and issueCount
-5. Arrange appropriate number of scenes based on inferred duration (typically 1-2 scenes per minute)
-6. Insert quizzes at appropriate points for knowledge checks
+5. **Scene count is depth-driven, not just duration-driven.** Standard courses run ~1-2 scenes per minute; `deep-dive` and `mastery` courses can run 1.5-3× longer to give application/synthesis tiers room to breathe. Don't truncate the curriculum to hit a duration target — extend the duration instead.
+6. Insert quizzes at appropriate points for knowledge checks. Quiz `depthLevel` should match the surrounding material (a quiz after `application` scenes should itself be `application`).
 7. Use interactive scenes sparingly (max 1-2 per course) and only when the concept truly benefits from hands-on interaction
 8. **Language**: Infer from the user's requirement text and context. Output all scene content in the inferred language.
 9. Regardless of information completeness, always output conforming JSON - do not ask questions or request more information
 10. **No teacher identity on slides**: Scene titles and keyPoints must be neutral and topic-focused. Never include the teacher's name or role (e.g., avoid "Teacher Wang's Tips", "Teacher's Wishes"). Use generic labels like "Tips", "Summary", "Key Takeaways" instead.
+11. **Every scene must declare `depthLevel`**, scenes ≥ application must declare `prerequisiteSceneIds`, and the top-level `coverageMap` must list every sub-topic with the scenes that address it.

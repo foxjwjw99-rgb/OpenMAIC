@@ -26,7 +26,18 @@
     "ttsTitle": "语音合成",
     "ttsHint": "选择 AI 教师的朗读音色",
     "ttsPreview": "试听",
-    "ttsPreviewing": "播放中..."
+    "ttsPreviewing": "播放中...",
+    "depth": "深度",
+    "depthDesc": "调整课程的深度与受众",
+    "depthProfile": "深度模式",
+    "depthAudience": "受众水平",
+    "depthProfileOverview": "概览 — 广而浅",
+    "depthProfileStandard": "标准 — 平衡",
+    "depthProfileDeepDive": "深入 — 充分递进",
+    "depthProfileMastery": "精通 — 高阶综合",
+    "depthAudienceBeginner": "入门",
+    "depthAudienceIntermediate": "中级",
+    "depthAudienceAdvanced": "进阶"
   },
   "export": {
     "pptx": "导出 PPTX",

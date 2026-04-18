@@ -26,7 +26,18 @@
     "ttsTitle": "Text-to-Speech",
     "ttsHint": "Choose a voice for the AI teacher",
     "ttsPreview": "Preview",
-    "ttsPreviewing": "Playing..."
+    "ttsPreviewing": "Playing...",
+    "depth": "Depth",
+    "depthDesc": "Tune how deep the course goes and who it's for",
+    "depthProfile": "Depth profile",
+    "depthAudience": "Audience level",
+    "depthProfileOverview": "Overview — broad and shallow",
+    "depthProfileStandard": "Standard — balanced",
+    "depthProfileDeepDive": "Deep dive — thorough scaffolding",
+    "depthProfileMastery": "Mastery — advanced synthesis",
+    "depthAudienceBeginner": "Beginner",
+    "depthAudienceIntermediate": "Intermediate",
+    "depthAudienceAdvanced": "Advanced"
   },
   "export": {
     "pptx": "Export PPTX",

@@ -51,6 +51,57 @@ export interface UserRequirements {
   userNickname?: string; // Student nickname for personalization
   userBio?: string; // Student background for personalization
   webSearch?: boolean; // Enable web search for richer context
+  // How deeply to cover the topic. Drives the depth-tier distribution in outline generation.
+  // Defaults to 'standard'.
+  depthProfile?: DepthProfile;
+  // Audience prior knowledge level. Influences foundation density and terminology pacing.
+  // Defaults to 'intermediate'.
+  audienceLevel?: AudienceLevel;
+}
+
+// ==================== Depth & Coverage Model ====================
+
+/** Per-scene cognitive depth tier (loosely mapped to Bloom's taxonomy). */
+export type DepthLevel =
+  | 'foundation' // Remember/Understand: definitions, motivation, simple examples
+  | 'building' // Understand/Apply: walkthroughs, mechanisms, worked examples
+  | 'application' // Apply/Analyze: non-trivial problems, comparisons, edge cases
+  | 'synthesis' // Analyze/Evaluate: integrate multiple concepts, design tradeoffs
+  | 'mastery'; // Evaluate/Create: novel scenarios, research-level depth
+
+/** Course-wide depth profile selected by the user (or inferred). */
+export type DepthProfile = 'overview' | 'standard' | 'deep-dive' | 'mastery';
+
+/** Audience prior knowledge. */
+export type AudienceLevel = 'beginner' | 'intermediate' | 'advanced';
+
+/** Optional fine-grained Bloom tier for downstream eval / analytics. */
+export type BloomLevel =
+  | 'remember'
+  | 'understand'
+  | 'apply'
+  | 'analyze'
+  | 'evaluate'
+  | 'create';
+
+/** A topic the model planned to cover and which scenes address it. */
+export interface CoverageTopic {
+  name: string;
+  rationale: string; // Why this sub-topic matters for the course goal
+  addressedBySceneIds: string[]; // Must be non-empty in a complete outline
+}
+
+/** Top-level coverage map returned alongside outlines. */
+export interface CoverageMap {
+  topics: CoverageTopic[];
+}
+
+/** Outline generation result envelope. */
+export interface OutlineGenerationOutput {
+  languageDirective: string;
+  outlines: SceneOutline[];
+  coverageMap: CoverageMap;
+  depthProfile: DepthProfile;
 }
 
 // ==================== Stage 1 Output: Scene Outlines (Simplified) ====================
@@ -69,6 +120,15 @@ export interface SceneOutline {
   estimatedDuration?: number; // seconds
   order: number;
   languageNote?: string; // LLM-inferred language note for this scene
+  // Cognitive depth tier. Optional in the type for backwards compatibility,
+  // but the outline generator fills it in (defaulting to 'building') so downstream
+  // code can rely on it being present after generateSceneOutlinesFromRequirements.
+  depthLevel?: DepthLevel;
+  // Scene IDs whose concepts this scene depends on. Required for application/synthesis/mastery.
+  // All entries must reference scenes with strictly smaller `order`.
+  prerequisiteSceneIds?: string[];
+  // Optional fine-grained Bloom tier when the model wants to be specific.
+  bloomLevel?: BloomLevel;
   // Suggested image IDs (from PDF-extracted images)
   suggestedImageIds?: string[]; // e.g., ["img_1", "img_3"]
   // AI-generated media requests (when PDF images are insufficient)

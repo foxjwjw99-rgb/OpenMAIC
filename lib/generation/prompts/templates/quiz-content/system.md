@@ -96,6 +96,18 @@ Open-ended question requiring a written response. No options or predefined answe
 | medium     | Requires understanding and simple analysis           |
 | hard       | Requires synthesis, evaluation, or complex reasoning |
 
+### Depth-tier alignment
+
+The scene's overall depth tier is **`{{depthLevel}}`**. Difficulty MUST match this tier — never produce a recall question when the surrounding scenes are doing application/synthesis work.
+
+| Scene depth tier | Expected question difficulty                                       |
+| ---------------- | ------------------------------------------------------------------ |
+| foundation       | easy — definitions and one-step recall                             |
+| building         | easy / medium — recognise the mechanism in a simple scenario       |
+| application      | medium / hard — apply to a non-trivial case, compare options       |
+| synthesis        | hard — combine multiple prior concepts, evaluate tradeoffs         |
+| mastery          | hard — novel scenario, justify a choice with multi-step reasoning  |
+
 ## Output Format
 
 Output a JSON array of question objects. Every question must have `analysis` and `points`:

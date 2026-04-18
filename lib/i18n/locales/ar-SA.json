@@ -26,7 +26,18 @@
     "ttsTitle": "تحويل النص إلى كلام",
     "ttsHint": "اختر صوتًا للمعلم الذكي",
     "ttsPreview": "معاينة",
-    "ttsPreviewing": "جارٍ التشغيل..."
+    "ttsPreviewing": "جارٍ التشغيل...",
+    "depth": "العمق",
+    "depthDesc": "اضبط مستوى عمق الدورة والجمهور المستهدف",
+    "depthProfile": "ملف العمق",
+    "depthAudience": "مستوى الجمهور",
+    "depthProfileOverview": "نظرة عامة — واسعة وسطحية",
+    "depthProfileStandard": "قياسي — متوازن",
+    "depthProfileDeepDive": "تعمق — تدرّج كامل",
+    "depthProfileMastery": "إتقان — تركيب متقدم",
+    "depthAudienceBeginner": "مبتدئ",
+    "depthAudienceIntermediate": "متوسط",
+    "depthAudienceAdvanced": "متقدم"
   },
   "export": {
     "pptx": "تصدير PPTX",

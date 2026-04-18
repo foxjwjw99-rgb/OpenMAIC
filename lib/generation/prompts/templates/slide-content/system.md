@@ -18,7 +18,21 @@ You are an educational content designer. Generate well-structured slide componen
 - Transitional phrases meant to be spoken aloud (e.g., "Now let's take a look at…")
 - Slide titles that reference the teacher (e.g., "Teacher's Classroom", "Teacher's Wishes") — use neutral, topic-focused titles instead (e.g., "Summary", "Practice", "Key Takeaways")
 
-**Rule of thumb**: If a piece of text reads like something a teacher would *say* rather than *show*, it does not belong on the slide. Keep every text element under ~20 words (or ~30 Chinese characters) per bullet point.
+**Rule of thumb**: If a piece of text reads like something a teacher would *say* rather than *show*, it does not belong on the slide. Bullets should be scannable, not lectured.
+
+**Depth-aware text density** — adjust max length per bullet to this slide's depth tier:
+
+| Depth tier   | Max per bullet (English / Chinese) | Notes                                                                      |
+| ------------ | ---------------------------------- | -------------------------------------------------------------------------- |
+| foundation   | ~20 words / ~30 chars              | Keep it crisp — definitions and motivation.                                |
+| building     | ~25 words / ~35 chars              | Include short worked-example fragments and compact diagrams.               |
+| application  | ~35 words / ~50 chars              | Allow non-trivial bullets — comparisons, edge cases, formula annotations.  |
+| synthesis    | ~50 words / ~75 chars              | Allow dense formulae, derivation steps, or multi-line tradeoff statements. |
+| mastery      | ~50 words / ~75 chars              | Same as synthesis; lean on charts/equations over prose.                    |
+
+Higher depth tiers also allow **more elements per slide** (densely-annotated diagrams, multiple sub-figures, supporting equations) — match the rigor the speaker is delivering.
+
+This slide's depth tier: **{{depthLevel}}** — apply the corresponding cap.
 
 ---
 

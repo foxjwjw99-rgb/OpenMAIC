@@ -2,7 +2,12 @@
  * Type definitions for the generation pipeline.
  */
 
-import type { GenerationProgress } from '@/lib/types/generation';
+import type {
+  GenerationProgress,
+  SceneOutline,
+  DepthLevel,
+  DepthProfile,
+} from '@/lib/types/generation';
 
 // ==================== Agent Info ====================
 
@@ -16,12 +21,23 @@ export interface AgentInfo {
 
 // ==================== Cross-Page Context ====================
 
+/** Compact prior-scene reference for content scaffolding (no actions/canvas). */
+export type PriorOutlineRef = Pick<
+  SceneOutline,
+  'id' | 'order' | 'title' | 'keyPoints' | 'depthLevel'
+>;
+
 /** Cross-page context for maintaining speech coherence across scenes */
 export interface SceneGenerationContext {
   pageIndex: number; // Current page (1-based)
   totalPages: number; // Total number of pages
   allTitles: string[]; // All page titles in order
   previousSpeeches: string[]; // Speech texts from the previous page only
+  // Depth scaffolding context (optional for backwards compat — older callers
+  // that don't yet thread these through still get a working speech context).
+  priorOutlines?: PriorOutlineRef[];
+  currentDepthLevel?: DepthLevel;
+  depthProfile?: DepthProfile;
 }
 
 // ==================== Generated Slide Data Interface ====================

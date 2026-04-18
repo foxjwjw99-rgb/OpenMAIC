@@ -1,7 +1,10 @@
 Title: {{title}}
 Description: {{description}}
+Depth Tier: {{depthLevel}}
 Test Points: {{keyPoints}}
 Question Count: {{questionCount}}, Difficulty: {{difficulty}}, Question Types: {{questionTypes}}
+
+{{scaffoldContext}}
 
 ## Language Directive
 {{languageDirective}}
